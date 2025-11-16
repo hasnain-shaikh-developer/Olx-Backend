@@ -1,4 +1,5 @@
 import Chat from "../models/Chat.js";
+import { ioInstance } from "../../index.js"; // IMPORTANT
 
 // Start chat (create new or return existing)
 export const startChat = async (req, res) => {
@@ -14,17 +15,14 @@ export const startChat = async (req, res) => {
       return res.status(400).json({ message: "Buyer ID missing" });
     }
 
-    // Buyer and seller should not be the same
     if (buyerId.toString() === sellerId.toString()) {
       return res
         .status(400)
         .json({ message: "You cannot start a chat with yourself" });
     }
 
-    // Check if chat already exists between same buyer and seller
     let chat = await Chat.findOne({ buyerId, sellerId });
 
-    // If not found, create a new one
     if (!chat) {
       chat = new Chat({
         buyerId,
@@ -41,20 +39,6 @@ export const startChat = async (req, res) => {
   }
 };
 
-// Get all chats (for admin)
-export const getAllChats = async (req, res) => {
-  try {
-    const chats = await Chat.find()
-      .populate("buyerId", "name email")
-      .populate("sellerId", "name email")
-      .sort({ updatedAt: -1 });
-
-    res.status(200).json(chats);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // Send message in a chat
 export const sendMessage = async (req, res) => {
   try {
@@ -67,12 +51,30 @@ export const sendMessage = async (req, res) => {
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: "Chat not found" });
 
-    chat.messages.push({ sender: senderId, text, createdAt: new Date() });
+    const newMsg = {
+      sender: senderId,
+      text,
+      createdAt: new Date(),
+    };
+
+    chat.messages.push(newMsg);
     await chat.save();
 
-    res.status(200).json({ success: true, message: "Message sent", chat });
+    // 🔥 Emit real-time message to room
+    ioInstance.to(chatId).emit("receive_message", {
+      chatId,
+      text,
+      sender: senderId,
+      createdAt: newMsg.createdAt,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Message sent",
+      chat,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -91,8 +93,7 @@ export const getChatById = async (req, res) => {
   }
 };
 
-
-// Get all chats (for Admin only)
+// All chats for admin
 export const getAllChatsForAdmin = async (req, res) => {
   try {
     const chats = await Chat.find()
