@@ -106,3 +106,18 @@ export const getAllChatsForAdmin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+// Get all chats (for admin or test)
+export const getAllChats = async (req, res) => {
+  try {
+    const chats = await Chat.find()
+      .populate("buyerId", "name email")
+      .populate("sellerId", "name email")
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json(chats);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
