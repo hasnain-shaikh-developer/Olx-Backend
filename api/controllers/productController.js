@@ -56,9 +56,11 @@ export const getAllProducts = async (req, res) => {
       .sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get All Products Error:", error); // add this line
+    res.status(500).json({ message: "Error fetching products", error: error.message });
   }
 };
+
 
 // Get products for logged-in user
 export const getUserProducts = async (req, res) => {

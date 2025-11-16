@@ -27,7 +27,7 @@ app.use(
     origin: [
       // "https://olx-backend-blue.vercel.app",
       "https://olx-frontend-three.vercel.app", 
-      // "http://localhost:5173"
+      "http://localhost:5173"
        
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
