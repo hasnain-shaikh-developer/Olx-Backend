@@ -1,5 +1,5 @@
 import Chat from "../models/Chat.js";
-import { ioInstance } from "../../index.js"; // IMPORTANT
+// import { ioInstance } from "../../index.js"; 
 
 // Start chat (create new or return existing)
 export const startChat = async (req, res) => {
@@ -61,12 +61,12 @@ export const sendMessage = async (req, res) => {
     await chat.save();
 
     // 🔥 Emit real-time message to room
-    ioInstance.to(chatId).emit("receive_message", {
-      chatId,
-      text,
-      sender: senderId,
-      createdAt: newMsg.createdAt,
-    });
+    // ioInstance.to(chatId).emit("receive_message", {
+    //   chatId,
+    //   text,
+    //   sender: senderId,
+    //   createdAt: newMsg.createdAt,
+    // });
 
     return res.status(200).json({
       success: true,
