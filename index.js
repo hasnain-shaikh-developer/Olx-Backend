@@ -4,8 +4,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer } from "http";
-import { Server } from "socket.io";
 
 // Routes
 import userRoutes from "./api/routes/userRoutes.js";
@@ -15,77 +13,45 @@ import chatRoutes from "./api/routes/chatRoutes.js";
 
 dotenv.config();
 const app = express();
-const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 
-// __dirname fix
+// Fix __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS (VERY IMPORTANT FOR VERCEL)
-const allowedOrigins = [
-  "https://olx-frontend-three.vercel.app",
-  "http://localhost:5173"
-];
-
+// Middleware
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: [
+      "https://olx-frontend-three.vercel.app",
+      "http://localhost:5173"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+    credentials: true,
   })
 );
 
-// Socket.io
-const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
-  }
-});
-
-io.on("connection", (socket) => {
-  console.log("Socket Connected:", socket.id);
-
-  socket.on("join_chat", (chatId) => {
-    socket.join(chatId);
-  });
-
-  socket.on("send_message", (data) => {
-    io.to(data.chatId).emit("receive_message", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Socket Disconnected:", socket.id);
-  });
-});
-
-export const ioInstance = io;
-
-// Middleware
 app.use(express.json());
 
-// Serve uploads
+// Serve uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// MongoDB
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.error("MongoDB Error:", err));
+  .catch(err => console.error("MongoDB Error:", err));
 
-// Routes
+// API routes
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/chats", chatRoutes);
 
-// Basic test route
+// Test Route
 app.get("/", (req, res) => {
-  res.send("Backend is running with Socket.io");
+  res.send("Backend is running");
 });
 
-// Vercel compatible server start
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server normally
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
